@@ -89,9 +89,12 @@ if (nrow(d) > 0) {
       command <- file.path(getwd(), "grouping.R")
       run.task(command, args)
 
-      command <- file.path(getwd(), "params.R")
-      run.task(command, args)
+      #command <- file.path(getwd(), "params.R")
+      #run.task(command, args)
       
+      #command <- file.path(getwd(), "reset_params.R")
+      #run.task(command, args)
+ 
       command <- file.path(getwd(), "palive.R")
       run.task(command, args)
       

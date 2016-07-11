@@ -52,7 +52,7 @@ args <- c(
   "mapper.R",
 
   "--map-params", 
-  sprintf("{\"params.dir\":\"%s/lifecycle/params\", \"basedate\":\"%s\"}", tz.basedir, basedate),
+  sprintf("{\"params.dir\":\"%s/lifecycle/params/%s\", \"basedate\":\"%s\"}", job.basedir(conf), offset, basedate),
 
   "--jri-lib",
   "/usr/lib64/R/library/rJava/jri/",

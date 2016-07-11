@@ -27,7 +27,7 @@ filter <- function(path) {
 
 conf <- config()
 
-basedate <- args.basedate()
+basedate <- strftime(as.Date(args.basedate(), format = "%Y%m%d"), format = "%Y-%m-%d")
 offset <- args.offset()
 tz.basedir <- job.tz.basedir(conf, basedate, offset) 
 
@@ -71,12 +71,18 @@ apply(X = d,
         l <- sum(M[which(M[, 2] == 4), 3])
         w <- sum(M[which(M[, 1] == 4 & M[, 2] != 4), 3])
         
-        sql <- sprintf("INSERT INTO lifecycles (client_id, new, active, risky, gone, regain, dt) VALUES ('%s', %d, %d, %d, %d, %d, '%s')", 
-                       x[1], n, a, r, l, w, basedate)
+        a0 <- sum(M[which(M[, 1] != 4 & M[, 1] != 2 & M[, 2] == 2), 3])
+        r0 <- sum(M[which(M[, 1] != 4 & M[, 1] != 3 & M[, 2] == 3), 3])
+        l0 <- sum(M[which(M[, 1] != 4 & M[, 2] == 4), 3])
         
-        #dbSendQuery(conn, sql)
+        
+        #dbSendQuery(con, sprintf("INSERT INTO lifecycle_states (client_id, new, active, risky, gone, regain, base_date) VALUES (%s, %d, %d, %d, %d, %d, %s)", 
+        #                         r[1], n, a, r, l, w, basedate))
+        
+        #dbSendQuery(con, sprintf("INSERT INTO lifecycle_state_transitions (client_id, new, active, risky, gone, regain, base_date) VALUES (%s, %d, %d, %d, %d, %d, %s)", 
+        #                         r[1], n, a0, r0, l0, w, basedate))       
+ 
       })
-
 
 dbCommit(conn)
 dbDisconnect(conn)
