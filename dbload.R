@@ -27,9 +27,12 @@ filter <- function(path) {
 
 conf <- config()
 
-basedate <- strftime(as.Date(args.basedate(), format = "%Y%m%d"), format = "%Y-%m-%d")
+basedate <- args.basedate()
 offset <- args.offset()
 tz.basedir <- job.tz.basedir(conf, basedate, offset) 
+
+
+cat(print.timestamp(), "* Running lifecycle.dbload\n")
 
 src <- sprintf("%s/lifecycle/phases", tz.basedir)
 dst <- tempfile(pattern = "lifecycle-phases.")
@@ -57,7 +60,7 @@ conn <- dbConnect(dbDriver(conf$db$driver),
                  port = conf$db$port)
 
 
-dbGetQuery(conn, "BEGIN TRANSACTION")
+invisible(dbGetQuery(conn, "BEGIN TRANSACTION"))
 apply(X = d, 
       MARGIN = 1,
       FUN = function(x) {
@@ -75,14 +78,46 @@ apply(X = d,
         r0 <- sum(M[which(M[, 1] != 4 & M[, 1] != 3 & M[, 2] == 3), 3])
         l0 <- sum(M[which(M[, 1] != 4 & M[, 2] == 4), 3])
         
+		d <- strftime(as.Date(basedate, format = "%Y%m%d"), format = "%Y-%m-%d")
+
+        dbClearResult(
+           dbSendQuery(
+             conn,
+             sprintf("WITH upsert
+                AS (UPDATE lifecycle_states
+                       SET new = %d,
+                           active = %d,
+                           risky = %d,
+                           gone = %d,
+                           regain = %d,
+                           updated_at = CURRENT_TIMESTAMP
+                     WHERE client_id = '%s'
+                       AND base_date = '%s'
+                 RETURNING *)
+        	 INSERT INTO lifecycle_states (client_id, new, active, risky, gone, regain, base_date, created_at, updated_at)
+                  SELECT '%s', %d, %d, %d, %d, %d, '%s', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                   WHERE NOT EXISTS (SELECT * FROM upsert)", n, a, r, l, w, x[1], d, x[1], n, a, r, l, w, d))
+        )
         
-        #dbSendQuery(con, sprintf("INSERT INTO lifecycle_states (client_id, new, active, risky, gone, regain, base_date) VALUES (%s, %d, %d, %d, %d, %d, %s)", 
-        #                         r[1], n, a, r, l, w, basedate))
-        
-        #dbSendQuery(con, sprintf("INSERT INTO lifecycle_state_transitions (client_id, new, active, risky, gone, regain, base_date) VALUES (%s, %d, %d, %d, %d, %d, %s)", 
-        #                         r[1], n, a0, r0, l0, w, basedate))       
- 
+        dbClearResult(
+          dbSendQuery(
+            conn,
+            sprintf("WITH upsert
+                AS (UPDATE lifecycle_state_transitions
+                       SET new = %d,
+                           active = %d,
+                           risky = %d,
+                           gone = %d,
+                           regain = %d,
+                           updated_at = CURRENT_TIMESTAMP
+                     WHERE client_id = '%s'
+                       AND base_date = '%s'
+                 RETURNING *)
+             INSERT INTO lifecycle_state_transitions (client_id, new, active, risky, gone, regain, base_date, created_at, updated_at)
+                  SELECT '%s', %d, %d, %d, %d, %d, '%s', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                   WHERE NOT EXISTS (SELECT * FROM upsert)", n, a0, r0, l0, w, x[1], d, x[1], n, a0, r0, l0, w, d))
+        ) 
       })
 
-dbCommit(conn)
-dbDisconnect(conn)
+invisible(dbCommit(conn))
+invisible(dbDisconnect(conn))

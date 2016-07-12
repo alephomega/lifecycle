@@ -100,6 +100,9 @@ if (nrow(d) > 0) {
       
       command <- file.path(getwd(), "phases.R")
       run.task(command, args)
+
+      command <- file.path(getwd(), "dbload.R")
+      run.task(command, args)
     }
   }
 } else {
