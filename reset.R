@@ -16,7 +16,7 @@ reduce.tasks <- function(tz.basedir) {
 }
 
 
-task <- conf$job$tasks$reset_params
+task <- conf$job$tasks$reset
 args <- c(
   "--base-date", 
   basedate, 
@@ -35,7 +35,7 @@ if (task$overwrite) {
 props = task$properties 
 props$mapred.reduce.tasks = reduce.tasks(tz.basedir)
 
-cat(print.timestamp(), "* Running reset.params.\n")
+cat(print.timestamp(), "* Running lifecycle.reset.\n")
 
 cat("properties:\n")
 print(props)
