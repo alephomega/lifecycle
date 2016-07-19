@@ -52,6 +52,18 @@ args.offset <- function() {
   t0
 }
 
+args.clients <- function() {
+  args <- commandArgs(TRUE)
+
+  t0 <- NA
+  m <- match("--clients", args, 0L)
+  if (m) {
+    t0 <- args[m + 1]
+  }
+
+  t0
+}
+
 fs.exists <- function(fs, input) {
   ls <- dfs.ls(fs, input)
   if (nrow(ls) == 0) {

@@ -44,10 +44,8 @@ conn <- dbConnect(dbDriver(conf$db$driver),
                   host = conf$db$host,
                   port = as.integer(conf$db$port))
 
-SQL = sprintf(
-  "SELECT DISTINCT ON (s.basedate, s.offset) s.basedate, s.offset FROM (SELECT TO_CHAR(((TO_TIMESTAMP('%s', 'YYYYMMDDHH24MI')::TIMESTAMP WITHOUT TIME ZONE AT TIME ZONE 'Asia/Seoul') AT TIME ZONE b.name), 'YYYYMMDD') AS basedate, TO_CHAR(b.utc_offset, 'HH24MI') AS offset FROM apps a, pg_timezone_names b WHERE a.company_id <> 5 AND a.status_id = 2 AND a.timezone = b.name 
-AND TO_CHAR(((TO_TIMESTAMP('%s', 'YYYYMMDDHH24MI')::TIMESTAMP WITHOUT TIME ZONE AT TIME ZONE 'Asia/Seoul') AT TIME ZONE b.name), 'HH24MI') 
-BETWEEN '0000' AND '0029') s", basetime, basetime
+SQL <- sprintf(
+  "SELECT a.client_id, a.timezone, TO_CHAR(((TO_TIMESTAMP('%s', 'YYYYMMDDHH24MI')::TIMESTAMP WITHOUT TIME ZONE AT TIME ZONE 'Asia/Seoul') AT TIME ZONE b.name), 'YYYYMMDD') AS basedate, TO_CHAR(b.utc_offset, 'HH24MI') AS offset FROM apps a, pg_timezone_names b WHERE a.company_id <> 5 AND a.status_id = 2 AND a.timezone = b.name AND TO_CHAR(((TO_TIMESTAMP('%s', 'YYYYMMDDHH24MI')::TIMESTAMP WITHOUT TIME ZONE AT TIME ZONE 'Asia/Seoul') AT TIME ZONE b.name), 'HH24MI') BETWEEN '0000' AND '0029'", basetime, basetime
 )
 
 d <- dbGetQuery(conn, SQL)
@@ -55,6 +53,7 @@ invisible(dbDisconnect(conn))
 
 if (nrow(d) > 0) {
   d$basedate <- format(as.Date(d$basedate, format = "%Y%m%d") - 1, format = "%Y%m%d")
+  d <- aggregate(client_id ~ (basedate + offset), FUN = c, data = d)
   
   for (i in 1:nrow(d)) {
     basedate <- d$basedate[i]
@@ -65,7 +64,10 @@ if (nrow(d) > 0) {
       offset <- sprintf("A%04d", as.integer(d$offset[i]))
     }
     
-    cat(print.timestamp(), "** Running analytics job.\n")
+    d$client_id <- as.matrix(d$client_id)
+    clients <- d$client_id[i, ]
+
+    cat(print.timestamp(), "** Running lifecycle analytics.\n")
     cat(sprintf("basedate: %s\n", basedate))
     cat(sprintf("timezone offset: %s\n", offset))
     
@@ -89,12 +91,6 @@ if (nrow(d) > 0) {
       command <- file.path(getwd(), "grouping.R")
       run.task(command, args)
 
-      #command <- file.path(getwd(), "params.R")
-      #run.task(command, args)
-      
-      #command <- file.path(getwd(), "reset_params.R")
-      #run.task(command, args)
- 
       command <- file.path(getwd(), "palive.R")
       run.task(command, args)
       
@@ -103,6 +99,20 @@ if (nrow(d) > 0) {
 
       command <- file.path(getwd(), "dbload.R")
       run.task(command, args)
+
+      command <- file.path(getwd(), "drop.R")
+      run.task(command, c(args, "--clients", paste(clients, collapse = ",")))
+
+      command <- file.path(getwd(), "hiveload.R")
+      run.task(command, args)
+
+      if (as.integer(strftime(strptime(basedate, format = '%Y%m%d'), format = "%u")) == 6) {
+        command <- file.path(getwd(), "params.R")
+        run.task(command, args)
+      
+        command <- file.path(getwd(), "reset_params.R")
+        run.task(command, args)
+      }
     }
   }
 } else {

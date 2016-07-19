@@ -39,7 +39,7 @@ print(args)
 mr.run(
   fs = conf$fs,
   jt = conf$jt,
-  jar = file.path(getwd(), "lib", conf$jar),
+  jar = file.path(getwd(), "lib", conf$jar$mr),
   class = task$main,
   args = args,
   props = task$properties

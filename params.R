@@ -84,7 +84,7 @@ print(args)
 mr.run(
   fs = conf$fs,
   jt = conf$jt,
-  jar = file.path(getwd(), "lib", conf$jar.rmr),
+  jar = file.path(getwd(), "lib", conf$jar$rmr),
   libjars = list.files(path = file.path(getwd(), "mr", "lib"), full.names = TRUE),
   files = list.files(path = file.path(getwd(), "mr", "params"), pattern = "\\.R$", full.names = TRUE, recursive = TRUE),
   class = task$main,
