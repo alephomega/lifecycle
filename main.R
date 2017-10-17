@@ -100,11 +100,11 @@ if (nrow(d) > 0) {
       command <- file.path(getwd(), "dbload.R")
       run.task(command, args)
 
-      command <- file.path(getwd(), "drop.R")
-      run.task(command, c(args, "--clients", paste(clients, collapse = ",")))
+      #command <- file.path(getwd(), "drop.R")
+      #run.task(command, c(args, "--clients", paste(clients, collapse = ",")))
 
-      command <- file.path(getwd(), "hiveload.R")
-      run.task(command, args)
+      #command <- file.path(getwd(), "hiveload.R")
+      #run.task(command, args)
 
       if (as.integer(strftime(strptime(basedate, format = '%Y%m%d'), format = "%u")) == 6) {
         command <- file.path(getwd(), "params.R")
